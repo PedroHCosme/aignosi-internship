@@ -1,3 +1,4 @@
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,8 +8,11 @@ import seaborn as sns
 sns.set_theme(style="whitegrid", rc={'figure.figsize':(12,6)})
 
 # load dataset and setting first column as datetime and index
-df = pd.read_csv('MiningProcess_Flotation_Plant_Database.csv', parse_dates=[0], index_col=0,
-                 decimal=',')
+csv_filename = 'MiningProcess_Flotation_Plant_Database.csv'
+workspace_root = Path('/home/pedrocosme/aignosi/aignosi-case')  
+data_path = workspace_root / 'data' / 'raw' / csv_filename
+
+df = pd.read_csv(data_path, parse_dates=[0], index_col=0, decimal=',')
 
 print("Dataset Head")
 print(df.head())
