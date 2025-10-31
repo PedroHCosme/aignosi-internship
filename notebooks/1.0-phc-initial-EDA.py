@@ -1,18 +1,16 @@
-from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from aignosi_case.config import PLOT_FIGSIZE, SEABORN_STYLE
+from aignosi_case.dataset import load_raw_data, load_hourly_data
+
 # seaborn style settings
-sns.set_theme(style="whitegrid", rc={'figure.figsize':(12,6)})
+sns.set_theme(style=SEABORN_STYLE, rc={'figure.figsize': PLOT_FIGSIZE})
 
-# load dataset and setting first column as datetime and index
-csv_filename = 'MiningProcess_Flotation_Plant_Database.csv'
-workspace_root = Path('/home/pedrocosme/aignosi/aignosi-case')  
-data_path = workspace_root / 'data' / 'raw' / csv_filename
-
-df = pd.read_csv(data_path, parse_dates=[0], index_col=0, decimal=',')
+# load dataset using centralized utility
+df = load_raw_data()
 
 print("Dataset Head")
 print(df.head())
@@ -23,8 +21,8 @@ print(df.info())
 print("\nDataset Description")
 print(df.describe())
 
-# downsampling to hourly frequency by aggregating 20-second data using mean over each hour
-df_hourly = df.resample('h').mean()
+# load hourly resampled data using centralized utility
+df_hourly = load_hourly_data()
 print("\nHourly Resampled Dataset Head")
 print(df_hourly.head())
 

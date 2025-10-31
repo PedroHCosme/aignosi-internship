@@ -1,74 +1,60 @@
-from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from aignosi_case.config import PLOT_FIGSIZE, SEABORN_STYLE
+from aignosi_case.dataset import load_hourly_data, save_interim_data
+from aignosi_case.plots import save_current_figure
+
 # seaborn style settings
-sns.set_theme(style="whitegrid", rc={'figure.figsize':(12,6)})
+sns.set_theme(style=SEABORN_STYLE, rc={'figure.figsize': PLOT_FIGSIZE})
 
-# load dataset and setting first column as datetime and index
-csv_filename = 'MiningProcess_Flotation_Plant_Database.csv'
-workspace_root = Path('/home/pedrocosme/aignosi/aignosi-case')  
-data_path = workspace_root / 'data' / 'raw' / csv_filename
+# load hourly resampled data using centralized utility
+df_hourly = load_hourly_data()
 
-df = pd.read_csv(data_path, parse_dates=[0], index_col=0, decimal=',')
-
-
-# downsampling to hourly frequency by aggregating 20-second data using mean over each hour
-df_hourly = df.resample('h').mean()
-
-# --- 1. Matriz de Correlação ---
+#  Matriz de Correlação
 plt.figure(figsize=(18, 9))
 corr_matrix = df_hourly.corr()
 
-# 1. Criar uma máscara para a diagonal superior
-# np.triu -> "triangle upper"
+save_interim_data(corr_matrix, 'correlation_matrix.csv')
+
+# máscara para a diagonal superior
 mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
 
-# 3. Desenhar o heatmap com a máscara e anotações menores
+#  heatmap
 sns.heatmap(corr_matrix, 
-            mask=mask,           # Aplicar a máscara
-            annot=True,          # Manter anotações
-            fmt='.2f',           # Formato de 2 casas decimais
-            cmap='coolwarm',     # Mapa de cores
+            mask=mask,           
+            annot=True,          
+            fmt='.2f',           
+            cmap='coolwarm',     
             vmin=-1, vmax=1,
-            annot_kws={"size": 9}  # Diminui o tamanho da fonte da anotação
-           ) 
-plt.title('Matriz de Correlação', fontsize=12)  # Reduzir tamanho do título
-plt.xticks(rotation=45, ha='right', fontsize=12)  # Reduzir tamanho dos labels do eixo X
-plt.yticks(rotation=0, fontsize=12)  # Reduzir tamanho dos labels do eixo Y
-plt.tight_layout() # Ajusta o layout para não cortar os labels
+            annot_kws={"size": 9}  )
+plt.title('Matriz de Correlação', fontsize=12)  
+plt.xticks(rotation=45, ha='right', fontsize=8)  
+plt.yticks(rotation=0, fontsize=8)  
+plt.tight_layout() 
+
+save_current_figure('correlation_matrix.png')
 plt.show()
 
-# --- Análise de Correlação no Terminal ---
+# --- Análise de Correlação ---
 
-# Pergunta 1: Quais variáveis mais afetam nosso alvo?
-# Vamos focar no '% Silica Concentrate'
 print("\n" + "="*50)
-print("Correlações com o Alvo: '% Silica Concentrate'")
+print("Correlações com target: '% Silica Concentrate'")
 print("="*50)
 
-# Pega a coluna do alvo, remove a correlação dela consigo mesma (1.00)
-# e ordena em ordem decrescente
 target_corr = corr_matrix['% Silica Concentrate'].drop('% Silica Concentrate')
 print(target_corr.sort_values(ascending=False))
 
-# Pergunta 2: Quais variáveis de entrada são redundantes?
-# (Multicolinearidade: correlação > 0.8 ou < -0.8)
 print("\n" + "="*50)
 print("Pares de Alta Correlação (Multicolinearidade)")
 print("="*50)
 
-# Usamos a máscara que criamos para o plot
-# .where() mantém os valores da diagonal inferior, o resto vira NaN
 masked_corr = corr_matrix.where(np.triu(np.ones_like(corr_matrix, dtype=bool), k=1))
 
-# .stack() "empilha" a matriz removendo os NaNs
-# Isso nos dá uma lista de pares únicos (A, B)
 stacked_corr = masked_corr.stack()
 
-# Filtra apenas pelas correlações absolutas muito altas
 high_corr_pairs = stacked_corr[stacked_corr.abs() > 0.8]
 
 if high_corr_pairs.empty:
