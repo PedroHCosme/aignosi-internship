@@ -13,10 +13,9 @@ sns.set_theme(style=SEABORN_STYLE, rc={'figure.figsize': PLOT_FIGSIZE})
 df_hourly = load_hourly_data()
 
 # Find all rows where ALL columns are NaN
-#    (This indicates a full shutdown)
 missing_mask = df_hourly.isnull().all(axis=1)
 
-# Get the timestamps for these missing hours
+# Get the timestamps for missing hours
 missing_timestamps = df_hourly.index[missing_mask]
 
 print(f"\nFound {len(missing_timestamps)} total missing hourly data points.")

@@ -38,18 +38,17 @@ plt.tight_layout()
 save_current_figure('correlation_matrix.png')
 plt.show()
 
-# --- Análise de Correlação ---
-
-print("\n" + "="*50)
+# Análise de Correlação
+print("\n" + "*"*50)
 print("Correlações com target: '% Silica Concentrate'")
-print("="*50)
+print("*"*50)
 
 target_corr = corr_matrix['% Silica Concentrate'].drop('% Silica Concentrate')
 print(target_corr.sort_values(ascending=False))
 
-print("\n" + "="*50)
+print("\n" + "*"*50)
 print("Pares de Alta Correlação (Multicolinearidade)")
-print("="*50)
+print("*"*50)
 
 masked_corr = corr_matrix.where(np.triu(np.ones_like(corr_matrix, dtype=bool), k=1))
 

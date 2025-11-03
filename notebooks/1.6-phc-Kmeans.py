@@ -11,15 +11,16 @@ from aignosi_case.dataset import load_hourly_data, save_interim_data
 from aignosi_case.plots import save_current_figure
 
 sns.set_theme(style=SEABORN_STYLE, rc={'figure.figsize': PLOT_FIGSIZE})
-
 df_hourly = load_hourly_data()
 
 df_clean = df_hourly.dropna()
+# Exclude target variables from clustering features
 X_features = df_clean.drop(columns=['% Iron Concentrate', '% Silica Concentrate'])
 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_features)
 
+# Elbow method: compute WCSS for k=1 to k=10
 inertia_values = []
 k_range = range(1, 11)
 
@@ -43,10 +44,11 @@ IDEAL_K = 3
 kmeans_final = KMeans(n_clusters=IDEAL_K, init='k-means++', n_init=10, random_state=42)
 cluster_labels = kmeans_final.fit_predict(X_scaled)
 
+# Project clusters onto 2D PCA space for visualization
 pca_2 = PCA(n_components=2)
 X_pca_2d = pca_2.fit_transform(X_scaled)
 df_pca = pd.DataFrame(X_pca_2d, columns=['PC1', 'PC2'], index=df_clean.index)
-df_pca['Cluster'] = cluster_labels.astype('category')
+df_pca['Cluster'] = pd.Categorical(cluster_labels)
 
 pc1_var = pca_2.explained_variance_ratio_[0] * 100
 pc2_var = pca_2.explained_variance_ratio_[1] * 100
@@ -62,17 +64,19 @@ save_current_figure('kmeans_clusters_pca.png')
 plt.show()
 
 df_analysis = df_clean.copy()
-df_analysis['Cluster'] = cluster_labels.astype('category')
+df_analysis['Cluster'] = pd.Categorical(cluster_labels)
 
 print("\n" + "="*50)
 print(f"Análise dos {IDEAL_K} Regimes Operacionais")
 print("="*50)
 
+# Compute mean of all features grouped by cluster
 cluster_analysis = df_analysis.groupby('Cluster').mean(numeric_only=True)
 
 key_cols_analysis = ['% Silica Concentrate', '% Iron Concentrate', '% Silica Feed', 'Starch Flow', 'Amina Flow', 'Flotation Column 01 Air Flow']
 print(cluster_analysis[key_cols_analysis])
 
+# Compute normalized cluster size distribution
 cluster_size = df_analysis['Cluster'].value_counts(normalize=True).sort_index()
 print("\nDistribuição dos Clusters:")
 print(cluster_size)

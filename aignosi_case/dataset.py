@@ -37,6 +37,32 @@ def load_hourly_data() -> pd.DataFrame:
     return df_hourly
 
 
+def load_interim_data(filename: str) -> pd.DataFrame:
+    """
+    Load a processed DataFrame from the interim data directory.
+    
+    Args:
+        filename: Name of the file to load (e.g., 'kmeans_cluster_analysis.csv')
+    
+    Returns:
+        pd.DataFrame: Loaded data
+    """
+    file_path = INTERIM_DATA_DIR / filename
+    
+    if not file_path.exists():
+        raise FileNotFoundError(f"Interim data file not found: {file_path}")
+    
+    if filename.endswith('.parquet'):
+        df = pd.read_parquet(file_path)
+    elif filename.endswith('.csv'):
+        df = pd.read_csv(file_path, index_col=0)
+    else:
+        raise ValueError(f"Unsupported file format: {filename}")
+    
+    logger.success(f"Loaded interim data from {file_path}")
+    return df
+
+
 def save_interim_data(df: pd.DataFrame, filename: str) -> Path:
     """
     Save a processed DataFrame to the interim data directory.

@@ -12,6 +12,7 @@ from aignosi_case.plots import save_current_figure
 sns.set_theme(style=SEABORN_STYLE, rc={'figure.figsize': PLOT_FIGSIZE})
 
 df_hourly = load_hourly_data()
+# Load pre-computed PCA projection from 1.3-phc-pca.py
 df_pca_plot = pd.read_csv(INTERIM_DATA_DIR / 'pca_2d_data.csv', index_col=0)
 
 df_pca_ready = df_hourly.dropna()
@@ -21,6 +22,7 @@ X_scaled = scaler.fit_transform(X_features)
 
 IDEAL_K = 3
 
+# Elbow method: compute WCSS for k=1 to k=10
 inertia_values = []
 k_range = range(1, 11)
 
@@ -43,8 +45,7 @@ kmeans_final = KMeans(n_clusters=IDEAL_K, init='k-means++', n_init=10, random_st
 cluster_labels = kmeans_final.fit_predict(X_scaled)
 
 df_cluster_plot = df_pca_plot.copy()
-df_cluster_plot['Cluster'] = cluster_labels
-df_cluster_plot['Cluster'] = df_cluster_plot['Cluster'].astype('category')
+df_cluster_plot['Cluster'] = pd.Categorical(cluster_labels)
 
 plt.figure(figsize=(14, 9))
 sns.scatterplot(data=df_cluster_plot, x='PC1', y='PC2', hue='Cluster', palette='Set1', alpha=0.7, s=20)
@@ -57,9 +58,9 @@ save_current_figure('cluster_pca_visualization.png')
 plt.show()
 
 df_analysis = df_hourly.dropna().copy()
-df_analysis['Cluster'] = cluster_labels
-df_analysis['Cluster'] = df_analysis['Cluster'].astype('category')
+df_analysis['Cluster'] = pd.Categorical(cluster_labels)
 
+# Compute mean of all features in original scale grouped by cluster
 cluster_analysis = df_analysis.groupby('Cluster').mean(numeric_only=True)
 
 print("\n" + "="*50)
@@ -71,11 +72,12 @@ cluster_size = df_analysis['Cluster'].value_counts(normalize=True).sort_index()
 print("\nDistribuição dos Clusters:")
 print(cluster_size)
 
+# Create DataFrame with standardized features for fair comparison across variables
 df_scaled_with_clusters = pd.DataFrame(X_scaled, columns=X_features.columns)
-df_scaled_with_clusters['Cluster'] = cluster_labels
-df_scaled_with_clusters['Cluster'] = df_scaled_with_clusters['Cluster'].astype('category')
+df_scaled_with_clusters['Cluster'] = pd.Categorical(cluster_labels)
 scaled_cluster_analysis = df_scaled_with_clusters.groupby('Cluster').mean(numeric_only=True)
 
+# Heatmap shows z-scores: positive=above mean, negative=below mean, center=0
 plt.figure(figsize=(20, 8))
 sns.heatmap(scaled_cluster_analysis, annot=True, fmt='.2f', cmap='coolwarm', center=0)
 plt.title(f'Fingerprint dos {IDEAL_K} Regimes (Valores Padronizados)', fontsize=20)
